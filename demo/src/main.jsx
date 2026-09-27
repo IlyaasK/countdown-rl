@@ -105,7 +105,7 @@ function App() {
           <div className="result-foot"><span>Actual model output · exact arithmetic verification</span><span>{attempts.length ? `ATTEMPT ${attempts.length}` : 'AWAITING INPUT'}</span></div>
         </div>
       </section>
-      <div className="footnote"><p>This is the latest 100,000-step checkpoint, quantized for the browser. On a held-out set it solved 56 of 252 four-number puzzles in one attempt. It may miss; failed attempts are shown honestly.</p><a href="https://huggingface.co/IlyaasK/countdown-qwen3.5-0.8b-grpo" target="_blank" rel="noreferrer">Model & weights ↗</a></div>
+      <div className="footnote"><p>This is the latest 100,000-step checkpoint, quantized for the browser. On a held-out set it solved 56 of 252 four-number puzzles in one attempt. It may miss; failed attempts are shown honestly.</p><div className="source-links"><a href="https://github.com/IlyaasK/countdown-rl" target="_blank" rel="noreferrer">Training & source ↗</a><a href="https://huggingface.co/IlyaasK/countdown-qwen3.5-0.8b-grpo" target="_blank" rel="noreferrer">Model & weights ↗</a></div></div>
     </main><footer><span>ILYAAS KAPADIA / 2026</span><span>BUILT WITH RL, RUN IN YOUR BROWSER</span></footer>
   </div>;
 }
