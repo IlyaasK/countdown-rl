@@ -210,4 +210,5 @@ npm test
 npm run build
 ```
 
-The build output is static and is hosted on GitHub Pages at `/countdown/`.
+The build output is static and is committed to `IlyaasK/ilyaask.github.io` at
+`/countdown/`. The live `ilya.as` domain is currently served by Netlify.
