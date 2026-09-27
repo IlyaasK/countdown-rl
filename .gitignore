@@ -1,0 +1,8 @@
+.venv/
+runs/
+webexport/out/
+__pycache__/
+*.pyc
+demo/node_modules/
+demo/dist/
+.DS_Store

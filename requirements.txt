@@ -1,0 +1,8 @@
+# Known-good versions used for this experiment on 2026-09-22.
+accelerate==1.15.0
+datasets==5.0.1
+peft==0.21.0
+tensorboard==2.21.0
+torch==2.14.0
+transformers==5.17.0
+trl==1.13.0
