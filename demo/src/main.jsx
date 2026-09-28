@@ -16,6 +16,8 @@ function App() {
   const [draft, setDraft] = useState({ numbers: START.numbers.map(String), target: String(START.target) });
   const [phase, setPhase] = useState('idle');
   const [progress, setProgress] = useState(null);
+  const [status, setStatus] = useState('');
+  const [backend, setBackend] = useState('');
   const [error, setError] = useState('');
   const [attempts, setAttempts] = useState([]);
   const worker = useRef(null);
@@ -27,7 +29,9 @@ function App() {
     worker.current = instance;
     instance.onmessage = ({ data }) => {
       if (data.type === 'progress') setProgress(data);
-      if (data.type === 'ready') { setPhase('ready'); setError(''); }
+      if (data.type === 'status') setStatus(data.label);
+      if (data.type === 'ready') { setPhase('ready'); setBackend(data.backend); setStatus(''); setError(''); }
+      if (data.type === 'backend') setBackend(data.backend);
       if (data.type === 'error') { setPhase(data.id ? 'ready' : 'error'); setError(data.error); }
       if (data.type === 'started') setPhase('generating');
       if (data.type === 'token') {
@@ -84,29 +88,28 @@ function App() {
   const percent = progress?.total ? Math.min(100, Math.round(progress.loaded / progress.total * 100)) : 0;
 
   return <div className="page">
-    <header className="masthead"><a href="/" className="back">← ilya.as</a><span className="masthead-end">A BROWSER-NATIVE RL EXPERIMENT <span className="star">✳</span></span></header>
     <main>
-      <section className="intro"><h1>Count<span>down</span><i>.</i></h1><p>Four numbers. One target. A small model trained with reinforcement learning to find the arithmetic in between.</p></section>
-      <section className="workspace" aria-label="Countdown demo">
-        <form className="challenge" onSubmit={run}>
-          <div className="section-head"><span>01 / THE CHALLENGE</span><button type="button" onClick={choosePuzzle} className="text-button">New puzzle ↗</button></div>
-          <label className="field-label">YOUR NUMBERS <small>Use each exactly once</small></label>
+      <p className="back"><a href="/">← Home</a></p>
+      <h1>Countdown</h1>
+      <p>Give a small model four numbers and a target. It runs in your browser and tries to find an expression using each number once.</p>
+      <form onSubmit={run} aria-label="Countdown puzzle">
+          <label className="field-label">Numbers</label>
           <div className="numbers">{draft.numbers.map((value, index) => <input key={index} aria-label={`Number ${index + 1}`} inputMode="numeric" value={value} onChange={(e) => updateNumber(index, e.target.value)} maxLength={3} />)}</div>
-          <label className="field-label" htmlFor="target">TARGET NUMBER</label>
-          <div className="target-line"><span className="equals">=</span><input id="target" inputMode="numeric" value={draft.target} onChange={(e) => setDraft((current) => ({ ...current, target: e.target.value }))} maxLength={3} /></div>
-          {phase === 'idle' || phase === 'error' || phase === 'loading' ? <button className="primary" type="button" disabled={phase === 'loading'} onClick={loadModel}>{phase === 'loading' ? `Loading model ${percent}%` : 'Load model'} <span>↗</span></button> : <button className="primary" type="submit" disabled={phase === 'generating'}>{phase === 'generating' ? 'Thinking…' : 'Try the model'} <span>↗</span></button>}
-          <p className="helper">{phase === 'ready' || phase === 'generating' ? 'Runs locally on your GPU. Your puzzle stays in your browser.' : 'First visit downloads ~505 MB. A WebGPU-capable browser and enough memory are required.'}</p>
-          {phase === 'loading' && <div className="progress" role="progressbar" aria-valuenow={percent} aria-valuemin="0" aria-valuemax="100"><span style={{ width: `${percent}%` }} /></div>}
+          <label className="field-label" htmlFor="target">Target</label>
+          <input className="target" id="target" inputMode="numeric" value={draft.target} onChange={(e) => setDraft((current) => ({ ...current, target: e.target.value }))} maxLength={3} />
+          <div className="actions"><button type="button" onClick={choosePuzzle}>New puzzle</button>{phase === 'idle' || phase === 'error' || phase === 'loading' ? <button type="button" disabled={phase === 'loading'} onClick={loadModel}>{phase === 'loading' ? `Loading ${percent}%` : 'Load model'}</button> : <button type="submit" disabled={phase === 'generating'}>{phase === 'generating' ? 'Generating…' : 'Try the model'}</button>}</div>
+          <p className="helper">{phase === 'loading' || (phase === 'generating' && status.includes('retrying')) ? status : phase === 'ready' || phase === 'generating' ? `Running locally on ${backend === 'cpu' ? 'CPU' : 'GPU'}. Your puzzle stays in your browser.` : 'First visit downloads about 505 MB. Firefox may use the CPU if its GPU path fails a check.'}</p>
+          {phase === 'loading' && <progress value={percent} max="100" aria-label="Model download progress" />}
           {error && <p className="error" role="alert">{error}</p>}
-        </form>
-        <div className="result">
-          <div className="section-head"><span>02 / THE MODEL</span><span className="live"><span className={phase === 'ready' || phase === 'generating' ? 'on' : ''} /> {phase === 'ready' ? 'READY' : phase === 'generating' ? 'GENERATING' : phase === 'loading' ? 'LOADING' : 'NOT LOADED'}</span></div>
-          <div className="terminal"><div className="terminal-top"><span className="dots"><i/><i/><i/></span><span>QWEN3.5 · 0.8B · GRPO</span></div><div className="terminal-body"><span className="terminal-prefix">&gt; model output</span><pre>{latest ? latest.output || 'Generating…' : 'Load the model, then try a puzzle. The output shown here will be generated by your browser—not a scripted answer.'}</pre>{latest?.done && <div className={latest.result.valid ? 'verdict success' : 'verdict miss'}>{latest.result.valid ? '✓ VERIFIED' : '× NOT SOLVED'} <span>{latest.result.reason}</span></div>}</div></div>
-          <div className="result-foot"><span>Actual model output · exact arithmetic verification</span><span>{attempts.length ? `ATTEMPT ${attempts.length}` : 'AWAITING INPUT'}</span></div>
-        </div>
-      </section>
-      <div className="footnote"><p>This is the latest 100,000-step checkpoint, quantized for the browser. On a held-out set it solved 56 of 252 four-number puzzles in one attempt. It may miss; failed attempts are shown honestly.</p><div className="source-links"><a href="https://github.com/IlyaasK/countdown-rl" target="_blank" rel="noreferrer">Training & source ↗</a><a href="https://huggingface.co/IlyaasK/countdown-qwen3.5-0.8b-grpo" target="_blank" rel="noreferrer">Model & weights ↗</a></div></div>
-    </main><footer><span>ILYAAS KAPADIA / 2026</span><span>BUILT WITH RL, RUN IN YOUR BROWSER</span></footer>
+      </form>
+      <h2>Model output</h2>
+      <pre className="output" aria-live="polite">{latest ? latest.output || 'Generating…' : 'Load the model, then try a puzzle.'}</pre>
+      {latest?.done && <p className={latest.result.valid ? 'success' : 'error'}>{latest.result.valid ? 'Solved.' : 'Not solved.'} {latest.result.reason}</p>}
+      <p className="footnote">This is the 100,000-step Qwen3.5-0.8B RL checkpoint, quantized for the browser. It solved 56 of 252 held-out four-number puzzles in one attempt. Failed attempts are shown as they are.</p>
+      <p><a href="https://github.com/IlyaasK/countdown-rl">Training and source</a> · <a href="https://huggingface.co/IlyaasK/countdown-qwen3.5-0.8b-grpo">Model weights</a></p>
+      <hr />
+      <p><a href="/">Home</a> | <a href="/blog/">Writing</a> | <a href="mailto:kapadiiy@mail.uc.edu">Email</a></p>
+    </main>
   </div>;
 }
 
